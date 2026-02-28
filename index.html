@@ -91,7 +91,7 @@
         <div class="my-12 border-t border-gray-700"></div>
 
         <h2 class="text-2xl font-bold mb-4">Import Full JLPT List</h2>
-        <p class="text-gray-400 mb-4">Tap a link below → Share → Print → zoom out → long-press → drag-select all → Copy → paste in textarea</p>
+        <p class="text-gray-400 mb-4">Tap a link → Share → Print → zoom out → long-press → drag-select all → Copy → paste below</p>
         <ul class="space-y-2 text-blue-400 mb-6">
           <li><a href="https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n5.csv" target="_blank" class="hover:underline">N5 Full List (~800 words)</a></li>
           <li><a href="https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n4.csv" target="_blank" class="hover:underline">N4 Full List</a></li>
@@ -100,7 +100,6 @@
           <li><a href="https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n1.csv" target="_blank" class="hover:underline">N1 Full List (~3,000–4,000 words)</a></li>
         </ul>
 
-        <!-- New: Direct URL fetch -->
         <h3 class="text-xl font-bold mb-2 mt-6">Or fetch directly from URL (easier, needs internet)</h3>
         <input id="fetchUrl" placeholder="Paste raw URL here (e.g. N5 link)" class="w-full bg-gray-900 border border-gray-700 rounded-2xl px-6 py-4 text-lg mb-4" />
         <a href="#" onclick="fetchAndImport(); return false;" class="w-full bg-indigo-600 hover:bg-indigo-700 py-5 rounded-2xl font-bold text-xl block text-center mb-6">Fetch & Import from URL</a>
@@ -113,7 +112,7 @@
   </div>
 
   <script>
-    // Starter vocab (at least some words so flashcards not 0/0)
+    // Starter vocab to avoid empty dictionary/flashcards
     let vocab = [
       {id:1, level:"N5", jp:"こんにちは", romaji:"konnichiwa", eng:"hello"},
       {id:2, level:"N5", jp:"おはようございます", romaji:"ohayou gozaimasu", eng:"good morning"},
@@ -130,9 +129,6 @@
     let customVocab = JSON.parse(localStorage.getItem('customVocab')) || [];
     let allVocab = [...vocab, ...customVocab];
 
-    let currentDeck = [];
-    let currentCardIndex = 0;
-
     function saveCustom() {
       localStorage.setItem('customVocab', JSON.stringify(customVocab));
       allVocab = [...vocab, ...customVocab];
@@ -142,6 +138,10 @@
       const container = document.getElementById('vocabList');
       if (!container) return;
       container.innerHTML = '';
+      if (filtered.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center">No words found. Add or import some!</p>';
+        return;
+      }
       filtered.forEach(w => {
         const div = document.createElement('div');
         div.className = 'bg-gray-900 border border-gray-700 rounded-3xl p-6';
@@ -171,7 +171,7 @@
     function showTab(n) {
       document.querySelectorAll('.tab').forEach(t => t.classList.add('hidden'));
       document.getElementById('tab-' + n).classList.remove('hidden');
-      if (n === 0) setTimeout(filterVocab, 100); // small delay for render
+      if (n === 0) setTimeout(filterVocab, 100); // delay for DOM update
     }
 
     function addCustomWord() {
@@ -191,23 +191,23 @@
     async function fetchAndImport() {
       const urlInput = document.getElementById('fetchUrl');
       const url = urlInput?.value.trim();
-      if (!url) return alert("Paste a raw URL first");
+      if (!url) return alert("Paste a raw URL first (e.g. N5 CSV link)");
 
       try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error("Failed to fetch");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const text = await response.text();
         document.getElementById('importData').value = text;
-        alert("Fetched! Now tap 'Import & Merge' below");
+        alert("Fetched successfully! Now tap 'Import & Merge' below");
       } catch (err) {
-        alert("Fetch error: " + err.message + "\nTry manual copy-paste instead");
+        alert("Fetch failed: " + err.message + "\nTry manual copy-paste from the link");
       }
     }
 
     function importCSV() {
       const textarea = document.getElementById('importData');
       const text = textarea?.value.trim();
-      if (!text) return alert("Paste or fetch CSV text first");
+      if (!text) return alert("No text to import – paste or fetch first");
 
       const rows = text.split('\n').slice(1); // skip header
       let added = 0;
@@ -227,12 +227,12 @@
 
       if (added > 0) {
         saveCustom();
-        alert(`Successfully imported ${added} words!`);
-        textarea.value = ''; // clear textarea
+        alert(`Success! Imported ${added} words.`);
+        textarea.value = ''; // clear
         filterVocab();       // refresh dictionary
-        setTimeout(filterVocab, 300); // extra refresh in case of iOS delay
+        setTimeout(filterVocab, 300); // extra force refresh for iOS timing issues
       } else {
-        alert("No valid words found in the pasted/fetched text");
+        alert("No valid words found – check pasted text format");
       }
     }
 
@@ -249,15 +249,14 @@
       showTab(0);
       filterVocab();
 
-      // Import button handler
       const importBtn = document.getElementById('importBtn');
       if (importBtn) {
-        const handleImport = e => {
+        const handle = e => {
           e.preventDefault();
           importCSV();
         };
-        importBtn.addEventListener('click', handleImport);
-        importBtn.addEventListener('touchend', handleImport);
+        importBtn.addEventListener('click', handle);
+        importBtn.addEventListener('touchend', handle);
       }
     });
   </script>
