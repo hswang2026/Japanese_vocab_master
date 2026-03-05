@@ -141,7 +141,25 @@
       text-decoration: none;
     }
     
-    /* Data management styles */
+    /* Quick link buttons */
+    .quick-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    
+    .quick-link.n5 { background: #0ea5e9; color: white; }
+    .quick-link.n4 { background: #22c55e; color: white; }
+    .quick-link.n3 { background: #eab308; color: black; }
+    .quick-link.n2 { background: #f97316; color: white; }
+    .quick-link.n1 { background: #ef4444; color: white; }
+    
     .data-status {
       background: rgba(16, 185, 129, 0.1);
       border: 1px solid #10b981;
@@ -184,6 +202,21 @@
       left: -9999px;
     }
     
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -214,14 +247,13 @@
       </div>
     </header>
 
-    <!-- DATA MANAGEMENT TAB (New) -->
+    <!-- DATA MANAGEMENT TAB -->
     <div id="tab-4" class="tab" style="display: none;">
       <div style="max-width: 800px; margin: 0 auto;">
         <h2 style="font-size: 1.75rem; font-weight: bold; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
           <i class="fas fa-database"></i> Data Management
         </h2>
         
-        <!-- Storage Status -->
         <div id="storageStatus" class="data-status">
           <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
             <i class="fas fa-check-circle" style="color: #10b981; font-size: 1.25rem;"></i>
@@ -232,26 +264,11 @@
           </p>
         </div>
 
-        <!-- Auto-Save Info -->
-        <div style="background: rgba(79, 70, 229, 0.1); border: 1px solid #4f46e5; border-radius: 0.75rem; padding: 1rem; margin-bottom: 1.5rem;">
-          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-            <i class="fas fa-info-circle" style="color: #4f46e5; font-size: 1.25rem;"></i>
-            <span style="font-weight: 600;">About Data Persistence</span>
-          </div>
-          <p style="color: #9ca3af; font-size: 0.875rem; margin: 0; line-height: 1.5;">
-            Your words are automatically saved to browser storage. They will persist when you refresh the page or install updates, as long as you use the same browser. For safety, we recommend creating backups regularly.
-          </p>
-        </div>
-
-        <!-- Backup Actions -->
         <div style="display: grid; gap: 1rem; margin-bottom: 2rem;">
           <div style="background: #111; border: 1px solid #374151; border-radius: 1rem; padding: 1.5rem;">
             <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
               <i class="fas fa-download"></i> Create Backup
             </h3>
-            <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 1rem;">
-              Export your custom words to a JSON file. Keep this file safe - you can restore your data anytime.
-            </p>
             <a href="#" onclick="exportFullBackup(); return false;" ontouchstart="" class="backup-btn primary btn-touch" style="display: inline-flex;">
               <i class="fas fa-file-export"></i> Download Backup File
             </a>
@@ -261,9 +278,6 @@
             <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
               <i class="fas fa-upload"></i> Restore from Backup
             </h3>
-            <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 1rem;">
-              Import a previously saved backup file to restore your words. This will merge with existing data.
-            </p>
             <div class="file-input-wrapper">
               <input type="file" id="restoreFile" accept=".json" onchange="importBackupFile(this)" />
               <label for="restoreFile" class="backup-btn btn-touch" style="display: inline-flex; cursor: pointer;">
@@ -276,16 +290,12 @@
             <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
               <i class="fas fa-share-alt"></i> Quick Share
             </h3>
-            <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 1rem;">
-              Copy your data to clipboard for quick transfer between devices.
-            </p>
             <a href="#" onclick="copyDataToClipboard(); return false;" ontouchstart="" class="backup-btn btn-touch" style="display: inline-flex;">
               <i class="fas fa-copy"></i> Copy to Clipboard
             </a>
           </div>
         </div>
 
-        <!-- Data Preview -->
         <div style="background: #111; border: 1px solid #374151; border-radius: 1rem; padding: 1.5rem;">
           <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem;">Your Custom Words</h3>
           <div id="customWordsList" style="max-height: 300px; overflow-y: auto;">
@@ -293,14 +303,10 @@
           </div>
         </div>
 
-        <!-- Danger Zone -->
         <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 1rem; padding: 1.5rem; margin-top: 1.5rem;">
           <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: #ef4444; display: flex; align-items: center; gap: 0.5rem;">
             <i class="fas fa-exclamation-triangle"></i> Danger Zone
           </h3>
-          <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 1rem;">
-            These actions cannot be undone. Make sure you have a backup first.
-          </p>
           <a href="#" onclick="clearAllData(); return false;" ontouchstart="" class="btn-touch" style="background: #ef4444; color: white; padding: 0.75rem 1.5rem; border-radius: 0.75rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
             <i class="fas fa-trash"></i> Delete All Custom Words
           </a>
@@ -375,8 +381,70 @@
 
     <!-- ADD / IMPORT TAB -->
     <div id="tab-3" class="tab" style="display: none;">
-      <div style="max-width: 600px; margin: 0 auto;">
-        <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 24px;">Add New Word</h2>
+      <div style="max-width: 700px; margin: 0 auto;">
+        
+        <!-- QUICK IMPORT SECTION -->
+        <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          <i class="fas fa-bolt"></i> Quick Import JLPT Lists
+        </h2>
+        <p style="color: #9ca3af; margin-bottom: 1rem; font-size: 0.875rem;">
+          Click any level below to instantly import ~800-3000 words. Uses CORS proxy for reliable fetching.
+        </p>
+        
+        <div style="display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 12px; margin-bottom: 2rem;">
+          <a href="#" onclick="fetchJLPT('N5'); return false;" ontouchstart="" class="quick-link n5 btn-touch">
+            <i class="fas fa-download"></i> N5 (~800 words)
+          </a>
+          <a href="#" onclick="fetchJLPT('N4'); return false;" ontouchstart="" class="quick-link n4 btn-touch">
+            <i class="fas fa-download"></i> N4 (~1,500 words)
+          </a>
+          <a href="#" onclick="fetchJLPT('N3'); return false;" ontouchstart="" class="quick-link n3 btn-touch">
+            <i class="fas fa-download"></i> N3 (~3,700 words)
+          </a>
+          <a href="#" onclick="fetchJLPT('N2'); return false;" ontouchstart="" class="quick-link n2 btn-touch">
+            <i class="fas fa-download"></i> N2 (~6,000 words)
+          </a>
+          <a href="#" onclick="fetchJLPT('N1'); return false;" ontouchstart="" class="quick-link n1 btn-touch">
+            <i class="fas fa-download"></i> N1 (~10,000 words)
+          </a>
+        </div>
+
+        <div id="fetchProgress" style="display: none; background: #111; border: 1px solid #374151; border-radius: 1rem; padding: 1rem; margin-bottom: 2rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div class="spinner"></div>
+            <span id="fetchStatus">Fetching data...</span>
+          </div>
+          <div id="fetchResult" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #374151; display: none;"></div>
+        </div>
+
+        <!-- CUSTOM URL FETCH -->
+        <div style="background: #111; border: 1px solid #374151; border-radius: 1rem; padding: 1.5rem; margin-bottom: 2rem;">
+          <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-link"></i> Fetch from Custom URL
+          </h3>
+          <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 1rem;">
+            Paste any raw CSV URL (GitHub, GitLab, etc.). The app will automatically use a CORS proxy if needed.
+          </p>
+          <div style="display: -webkit-flex; display: flex; gap: 12px; -webkit-flex-direction: column; flex-direction: column;">
+            <input id="customUrl" placeholder="https://raw.githubusercontent.com/..." style="background-color: #0a0a0a; border: 1px solid #374151; border-radius: 0.75rem; padding: 16px 20px; color: white; -webkit-flex: 1; flex: 1;" />
+            <div style="display: -webkit-flex; display: flex; gap: 12px;">
+              <select id="urlLevel" style="background-color: #0a0a0a; border: 1px solid #374151; border-radius: 0.75rem; padding: 12px 16px; color: white;">
+                <option value="Custom">Custom Level</option>
+                <option value="N5">N5</option>
+                <option value="N4">N4</option>
+                <option value="N3">N3</option>
+                <option value="N2">N2</option>
+                <option value="N1">N1</option>
+              </select>
+              <a href="#" onclick="fetchFromCustomUrl(); return false;" ontouchstart="" class="btn-touch" style="background-color: #4f46e5; color: white; padding: 12px 24px; border-radius: 0.75rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap;">
+                <i class="fas fa-cloud-download-alt"></i> Fetch
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- MANUAL ADD -->
+        <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1.5rem; margin-top: 2rem;">Add Single Word</h2>
         <div style="display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; gap: 16px;">
           <input id="addJp" placeholder="Japanese (会う)" style="background-color: #111; border: 1px solid #374151; border-radius: 1rem; padding: 20px 24px; color: white;" />
           <input id="addRomaji" placeholder="Romaji (au)" style="background-color: #111; border: 1px solid #374151; border-radius: 1rem; padding: 20px 24px; color: white;" />
@@ -397,39 +465,64 @@
 
         <div style="margin: 48px 0; border-top: 1px solid #374151;"></div>
 
-        <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 16px;">Import from Jisho.org</h2>
-        <p style="color: #9ca3af; margin-bottom: 16px;">Enter a Japanese word to fetch detailed data including multiple meanings and examples.</p>
+        <!-- JISHO FETCH -->
+        <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem;">Import from Jisho.org</h2>
+        <p style="color: #9ca3af; margin-bottom: 1rem;">Enter a Japanese word to fetch detailed data including multiple meanings and examples.</p>
         <div style="display: -webkit-flex; display: flex; gap: 12px; margin-bottom: 24px;">
           <input id="jishoSearch" placeholder="Enter Japanese word..." style="-webkit-flex: 1; flex: 1; background-color: #111; border: 1px solid #374151; border-radius: 1rem; padding: 16px 24px; color: white;" />
-          <a href="#" onclick="fetchFromJisho(); return false;" ontouchstart="" class="btn-touch" style="background-color: #4f46e5; color: white; padding: 16px 24px; border-radius: 1rem; font-weight: 600; text-decoration: none; display: inline-block; white-space: nowrap;">Fetch Data</a>
+          <a href="#" onclick="fetchFromJisho(); return false;" ontouchstart="" class="btn-touch" style="background-color: #4f46e5; color: white; padding: 16px 24px; border-radius: 1rem; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap;">
+            <i class="fas fa-search"></i> Lookup
+          </a>
         </div>
         <div id="jishoResult" style="display: none; background: #111; border: 1px solid #374151; border-radius: 1rem; padding: 20px; margin-bottom: 24px;"></div>
 
-        <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 16px;">Bulk Import CSV</h2>
-        <textarea id="importData" placeholder="Format: japanese,romaji,english,type,extra meanings,example sentence..." style="width: 100%; height: 200px; background-color: #111; border: 1px solid #374151; border-radius: 1.5rem; padding: 24px; font-family: monospace; font-size: 0.875rem; color: white;"></textarea>
-        <a href="#" onclick="importCSV(); return false;" ontouchstart="" class="btn-touch" style="margin-top: 24px; width: 100%; background-color: #e11d48; color: white; padding: 20px; border-radius: 1rem; font-weight: bold; font-size: 1.25rem; text-decoration: none; display: block; text-align: center;">Import & Merge</a>
+        <!-- MANUAL CSV -->
+        <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; margin-top: 2rem;">Manual CSV Import</h2>
+        <p style="color: #9ca3af; margin-bottom: 1rem; font-size: 0.875rem;">
+          Paste CSV data directly. Format: japanese,romaji,english,type,extra meanings,example
+        </p>
+        <textarea id="importData" placeholder="こんにちは,konnichiwa,hello,expression,morning greeting,こんにちは、元気ですか？" style="width: 100%; height: 150px; background-color: #111; border: 1px solid #374151; border-radius: 1rem; padding: 20px; font-family: monospace; font-size: 0.875rem; color: white;"></textarea>
+        <a href="#" onclick="importCSV(); return false;" ontouchstart="" class="btn-touch" style="margin-top: 16px; width: 100%; background-color: #e11d48; color: white; padding: 16px; border-radius: 1rem; font-weight: bold; text-decoration: none; display: block; text-align: center;">Import from Textarea</a>
+        
+        <a href="#" onclick="exportCustom(); return false;" ontouchstart="" class="btn-touch" style="margin-top: 12px; width: 100%; background-color: #374151; color: white; padding: 16px; border-radius: 1rem; text-decoration: none; display: block; text-align: center;">
+          <i class="fas fa-file-export"></i> Export Custom Words (JSON)
+        </a>
       </div>
     </div>
   </div>
 
   <script>
     // ==========================================
-    // DATA PERSISTENCE & VERSION MANAGEMENT
+    // CONFIGURATION
     // ==========================================
     
-    var APP_VERSION = '2.0.0';
+    var APP_VERSION = '2.1.0';
     var STORAGE_KEY = 'customVocab_v2';
     var BACKUP_KEY = 'customVocab_backup';
     
-    // Safe LocalStorage wrapper with quota checking
+    // JLPT CSV URLs from elzup/jlpt-word-list [^76^]
+    var JLPT_URLS = {
+      N5: 'https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n5.csv',
+      N4: 'https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n4.csv',
+      N3: 'https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n3.csv',
+      N2: 'https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n2.csv',
+      N1: 'https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n1.csv'
+    };
+    
+    // CORS Proxy services [^63^]
+    var CORS_PROXIES = [
+      'https://corsproxy.io/?',
+      'https://api.allorigins.win/raw?url=',
+      'https://api.codetabs.com/v1/proxy?quest='
+    ];
+    
+    // ==========================================
+    // STORAGE UTILITIES
+    // ==========================================
+    
     var safeStorage = {
       get: function(key) {
-        try { 
-          return localStorage.getItem(key); 
-        } catch (e) { 
-          console.warn('localStorage get error:', e);
-          return null; 
-        }
+        try { return localStorage.getItem(key); } catch (e) { return null; }
       },
       set: function(key, value) {
         try { 
@@ -439,22 +532,16 @@
           if (e.name === 'QuotaExceededError') {
             alert('Storage full! Please export and clear some data.');
           }
-          console.warn('localStorage set error:', e);
           return false; 
         }
       },
       remove: function(key) {
-        try {
-          localStorage.removeItem(key);
-          return true;
-        } catch (e) {
-          return false;
-        }
+        try { localStorage.removeItem(key); return true; } catch (e) { return false; }
       }
     };
 
     // ==========================================
-    // DEFAULT VOCABULARY DATA
+    // DEFAULT VOCABULARY
     // ==========================================
     
     var defaultVocab = [
@@ -470,41 +557,39 @@
       {id: 10, level: "N5", type: "adjective", jp: "大きい", romaji: "ookii", eng: "big", extraMeanings: ["large", "great", "important"], example: { jp: "大きい家に住んでいます。", romaji: "Ookii ie ni sunde imasu.", eng: "I live in a big house." }}
     ];
 
-    // ==========================================
-    // DATA LOADING WITH MIGRATION
-    // ==========================================
-    
     var customVocab = [];
     var allVocab = [];
+    var currentDeck = [];
+    var currentCardIndex = 0;
+    var synth = window.speechSynthesis;
+    var japaneseVoice = null;
+
+    // ==========================================
+    // DATA LOADING & MIGRATION
+    // ==========================================
     
     function loadData() {
-      // Try to load from new storage key first
       var stored = safeStorage.get(STORAGE_KEY);
       
       if (stored) {
         try {
           customVocab = JSON.parse(stored);
-          console.log('Loaded ' + customVocab.length + ' custom words from v2 storage');
         } catch (e) {
-          console.error('Error parsing stored data:', e);
           customVocab = [];
         }
       } else {
-        // Try to migrate from old storage key
+        // Migrate from old key
         var oldStored = safeStorage.get('customVocab');
         if (oldStored) {
           try {
             customVocab = JSON.parse(oldStored);
-            // Save to new key
             safeStorage.set(STORAGE_KEY, oldStored);
-            console.log('Migrated ' + customVocab.length + ' words from old storage');
           } catch (e) {
             customVocab = [];
           }
         }
       }
       
-      // Merge with defaults
       allVocab = defaultVocab.concat(customVocab);
       updateDataStatus();
     }
@@ -512,7 +597,6 @@
     function saveData() {
       var success = safeStorage.set(STORAGE_KEY, JSON.stringify(customVocab));
       if (success) {
-        // Also update backup timestamp
         safeStorage.set(BACKUP_KEY, JSON.stringify({
           timestamp: new Date().toISOString(),
           count: customVocab.length
@@ -534,14 +618,12 @@
       if (backupInfo && timeEl) {
         try {
           var info = JSON.parse(backupInfo);
-          var date = new Date(info.timestamp);
-          timeEl.textContent = date.toLocaleString();
+          timeEl.textContent = new Date(info.timestamp).toLocaleString();
         } catch (e) {
           timeEl.textContent = 'Unknown';
         }
       }
       
-      // Update preview list
       if (listEl) {
         if (customVocab.length === 0) {
           listEl.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 2rem 0;">No custom words yet</p>';
@@ -551,12 +633,7 @@
             var w = customVocab[i];
             var item = document.createElement('div');
             item.style.cssText = 'padding: 0.75rem; border-bottom: 1px solid #374151; display: flex; justify-content: space-between; align-items: center;';
-            item.innerHTML = 
-              '<div>' +
-                '<span style="font-weight: 600;">' + w.jp + '</span>' +
-                '<span style="color: #9ca3af; margin-left: 0.5rem;">' + w.eng + '</span>' +
-              '</div>' +
-              '<span style="font-size: 0.75rem; color: #6b7280;">' + w.level + '</span>';
+            item.innerHTML = '<div><span style="font-weight: 600;">' + w.jp + '</span><span style="color: #9ca3af; margin-left: 0.5rem;">' + w.eng + '</span></div><span style="font-size: 0.75rem; color: #6b7280;">' + w.level + '</span>';
             listEl.appendChild(item);
           }
           if (customVocab.length > 50) {
@@ -570,7 +647,208 @@
     }
 
     // ==========================================
-    // BACKUP & EXPORT FUNCTIONS
+    // FETCH FROM URL WITH CORS PROXY
+    // ==========================================
+    
+    async function fetchWithProxy(url, proxyIndex) {
+      if (proxyIndex === undefined) proxyIndex = 0;
+      if (proxyIndex >= CORS_PROXIES.length) {
+        throw new Error('All CORS proxies failed. Please try manual import.');
+      }
+      
+      var proxyUrl = CORS_PROXIES[proxyIndex] + encodeURIComponent(url);
+      
+      try {
+        var response = await fetch(proxyUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'text/plain,application/json,*/*'
+          }
+        });
+        
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return await response.text();
+      } catch (err) {
+        console.warn('Proxy ' + proxyIndex + ' failed, trying next...');
+        return fetchWithProxy(url, proxyIndex + 1);
+      }
+    }
+
+    async function fetchJLPT(level) {
+      var url = JLPT_URLS[level];
+      if (!url) {
+        alert('Invalid JLPT level: ' + level);
+        return;
+      }
+      
+      var progressDiv = document.getElementById('fetchProgress');
+      var statusEl = document.getElementById('fetchStatus');
+      var resultEl = document.getElementById('fetchResult');
+      
+      progressDiv.style.display = 'block';
+      resultEl.style.display = 'none';
+      statusEl.innerHTML = '<div class="spinner"></div> Fetching ' + level + ' from GitHub...';
+      
+      try {
+        var text = await fetchWithProxy(url);
+        var lines = text.split('\n').filter(function(l) { return l.trim(); });
+        
+        // Skip header if present
+        var startIndex = 0;
+        if (lines.length > 0 && (lines[0].indexOf('word') !== -1 || lines[0].indexOf('level') !== -1)) {
+          startIndex = 1;
+        }
+        
+        var imported = 0;
+        var errors = [];
+        
+        for (var i = startIndex; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (!line) continue;
+          
+          // Parse CSV: word,reading,meaning,level
+          var parts = parseCSVLine(line);
+          if (parts.length >= 3) {
+            var word = parts[0];
+            var reading = parts[1] || '';
+            var meaning = parts[2] || '';
+            var wordLevel = parts[3] || level;
+            
+            if (word && meaning) {
+              customVocab.push({
+                id: Date.now() + imported,
+                level: wordLevel,
+                type: guessWordType(word, meaning),
+                jp: word,
+                romaji: reading,
+                eng: meaning.split(';')[0].trim(),
+                extraMeanings: meaning.split(';').slice(1).map(function(m) { return m.trim(); }).filter(function(m) { return m; }),
+                example: null
+              });
+              imported++;
+            }
+          }
+        }
+        
+        saveData();
+        filterVocab();
+        
+        statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> Import complete!';
+        resultEl.innerHTML = 
+          '<div style="color: #10b981; font-weight: 600;">Successfully imported ' + imported + ' words from ' + level + '</div>' +
+          '<div style="color: #9ca3af; font-size: 0.875rem; margin-top: 0.5rem;">Total custom words: ' + customVocab.length + '</div>';
+        resultEl.style.display = 'block';
+        
+        // Auto-hide after 5 seconds
+        setTimeout(function() {
+          progressDiv.style.display = 'none';
+        }, 5000);
+        
+      } catch (err) {
+        statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #ef4444;"></i> Error';
+        resultEl.innerHTML = '<div style="color: #ef4444;">' + err.message + '</div><div style="color: #9ca3af; font-size: 0.875rem; margin-top: 0.5rem;">Try manual CSV import instead.</div>';
+        resultEl.style.display = 'block';
+      }
+    }
+
+    async function fetchFromCustomUrl() {
+      var urlInput = document.getElementById('customUrl');
+      var levelSelect = document.getElementById('urlLevel');
+      var url = urlInput ? urlInput.value.trim() : '';
+      var level = levelSelect ? levelSelect.value : 'Custom';
+      
+      if (!url) {
+        alert('Please enter a URL');
+        return;
+      }
+      
+      var progressDiv = document.getElementById('fetchProgress');
+      var statusEl = document.getElementById('fetchStatus');
+      var resultEl = document.getElementById('fetchResult');
+      
+      progressDiv.style.display = 'block';
+      resultEl.style.display = 'none';
+      statusEl.innerHTML = '<div class="spinner"></div> Fetching from URL...';
+      
+      try {
+        var text = await fetchWithProxy(url);
+        
+        // Try to parse as CSV
+        var lines = text.split('\n').filter(function(l) { return l.trim(); });
+        var imported = 0;
+        
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (!line || line.indexOf('word') === 0 || line.indexOf('#') === 0) continue;
+          
+          var parts = parseCSVLine(line);
+          if (parts.length >= 3) {
+            customVocab.push({
+              id: Date.now() + imported,
+              level: level,
+              type: guessWordType(parts[0], parts[2]),
+              jp: parts[0],
+              romaji: parts[1] || '',
+              eng: parts[2].split(';')[0].trim(),
+              extraMeanings: parts[2].split(';').slice(1).map(function(m) { return m.trim(); }).filter(function(m) { return m; }),
+              example: parts[3] || null
+            });
+            imported++;
+          }
+        }
+        
+        saveData();
+        filterVocab();
+        
+        statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> Success!';
+        resultEl.innerHTML = 'Imported ' + imported + ' words from custom URL';
+        resultEl.style.display = 'block';
+        
+        if (urlInput) urlInput.value = '';
+        
+      } catch (err) {
+        statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #ef4444;"></i> Failed';
+        resultEl.innerHTML = err.message;
+        resultEl.style.display = 'block';
+      }
+    }
+
+    // Helper: Parse CSV line handling quotes
+    function parseCSVLine(line) {
+      var result = [];
+      var current = '';
+      var inQuotes = false;
+      
+      for (var i = 0; i < line.length; i++) {
+        var char = line[i];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      
+      result.push(current.trim());
+      return result;
+    }
+
+    function guessWordType(word, meaning) {
+      if (!meaning) return 'word';
+      meaning = meaning.toLowerCase();
+      if (meaning.indexOf('to ') === 0) return 'verb';
+      if (meaning.indexOf('verb') !== -1) return 'verb';
+      if (meaning.indexOf('adjective') !== -1) return 'adjective';
+      if (meaning.indexOf('noun') !== -1) return 'noun';
+      if (meaning.indexOf('adverb') !== -1) return 'adverb';
+      return 'word';
+    }
+
+    // ==========================================
+    // BACKUP & EXPORT
     // ==========================================
     
     function exportFullBackup() {
@@ -594,8 +872,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      // Show success feedback
-      alert('✅ Backup downloaded! Keep this file safe - you can restore your data anytime.');
+      alert('✅ Backup downloaded! Keep this file safe.');
     }
 
     function importBackupFile(input) {
@@ -606,15 +883,10 @@
       reader.onload = function(e) {
         try {
           var data = JSON.parse(e.target.result);
-          
-          // Validate backup format
           if (!data.customVocab || !Array.isArray(data.customVocab)) {
-            throw new Error('Invalid backup file format');
+            throw new Error('Invalid backup format');
           }
           
-          var importedCount = data.customVocab.length;
-          
-          // Merge with existing (avoid duplicates by ID)
           var existingIds = {};
           for (var i = 0; i < customVocab.length; i++) {
             existingIds[customVocab[i].id] = true;
@@ -631,38 +903,23 @@
           
           saveData();
           filterVocab();
-          
-          alert('✅ Restore complete!\n\n' + 
-                'Imported: ' + newWords + ' new words\n' +
-                'Skipped: ' + (importedCount - newWords) + ' duplicates\n' +
-                'Total: ' + customVocab.length + ' custom words');
+          alert('✅ Restored ' + newWords + ' new words (' + (data.customVocab.length - newWords) + ' duplicates skipped)');
           
         } catch (err) {
-          alert('❌ Error reading backup: ' + err.message);
+          alert('❌ Error: ' + err.message);
         }
-        
-        // Reset input
         input.value = '';
       };
-      
-      reader.onerror = function() {
-        alert('❌ Error reading file');
-      };
-      
       reader.readAsText(file);
     }
 
     function copyDataToClipboard() {
-      var data = {
-        customVocab: customVocab,
-        exportedAt: new Date().toISOString()
-      };
-      
+      var data = { customVocab: customVocab, exportedAt: new Date().toISOString() };
       var jsonStr = JSON.stringify(data);
       
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      if (navigator.clipboard) {
         navigator.clipboard.writeText(jsonStr).then(function() {
-          alert('✅ Data copied to clipboard! You can paste this on another device to transfer your words.');
+          alert('✅ Data copied! Paste on another device to transfer.');
         }).catch(function() {
           fallbackCopy(jsonStr);
         });
@@ -677,48 +934,40 @@
         textarea.style.left = '-999999px';
         document.body.appendChild(textarea);
         textarea.select();
-        
         try {
           document.execCommand('copy');
           alert('✅ Data copied to clipboard!');
         } catch (err) {
-          alert('❌ Could not copy. Please use the Download Backup option instead.');
+          alert('❌ Copy failed. Use Download Backup instead.');
         }
-        
         document.body.removeChild(textarea);
       }
     }
 
     function clearAllData() {
-      if (!confirm('⚠️ WARNING: This will delete ALL your custom words permanently!\n\n' +
-                   'Current count: ' + customVocab.length + ' words\n\n' +
-                   'Make sure you have a backup first. This cannot be undone.\n\n' +
-                   'Are you absolutely sure?')) {
-        return;
-      }
-      
-      if (!confirm('Final confirmation: Delete all ' + customVocab.length + ' custom words?')) {
-        return;
-      }
+      if (!confirm('⚠️ WARNING: Delete ALL ' + customVocab.length + ' custom words?\n\nThis cannot be undone!\n\nMake sure you have a backup first.')) return;
+      if (!confirm('Final confirmation: Delete everything?')) return;
       
       customVocab = [];
       saveData();
       filterVocab();
-      alert('✅ All custom words deleted. Your default vocabulary remains.');
+      alert('✅ All custom data cleared.');
+    }
+
+    function exportCustom() {
+      var data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(customVocab, null, 2));
+      var a = document.createElement('a');
+      a.href = data;
+      a.download = "my-japanese-words.json";
+      a.click();
     }
 
     // ==========================================
-    // SPEECH SYNTHESIS
+    // RENDER & UI FUNCTIONS
     // ==========================================
     
-    var synth = window.speechSynthesis;
-    var japaneseVoice = null;
-    var currentDeck = [];
-    var currentCardIndex = 0;
-
     function initSpeech() {
       if (!('speechSynthesis' in window)) return;
-      
       function loadVoices() {
         var voices = synth.getVoices();
         for (var i = 0; i < voices.length; i++) {
@@ -728,7 +977,6 @@
           }
         }
       }
-      
       loadVoices();
       if (synth.onvoiceschanged !== undefined) {
         synth.onvoiceschanged = loadVoices;
@@ -738,19 +986,13 @@
     function speak(text) {
       if (!synth || !text) return;
       synth.cancel();
-      
       var utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'ja-JP';
       utterance.rate = 0.9;
       if (japaneseVoice) utterance.voice = japaneseVoice;
-      
       synth.speak(utterance);
     }
 
-    // ==========================================
-    // RENDER FUNCTIONS
-    // ==========================================
-    
     function renderVocab(filtered) {
       var container = document.getElementById('vocabList');
       if (!container) return;
@@ -764,7 +1006,6 @@
       for (var i = 0; i < filtered.length; i++) {
         var w = filtered[i];
         var extraTags = '';
-        
         if (w.extraMeanings && w.extraMeanings.length > 0) {
           for (var j = 0; j < w.extraMeanings.length && j < 3; j++) {
             extraTags += '<span class="meaning-tag">' + w.extraMeanings[j] + '</span>';
@@ -773,19 +1014,14 @@
         
         var exampleHtml = '';
         if (w.example && w.example.jp) {
-          exampleHtml = 
-            '<div class="example-box">' +
-              '<div style="font-size: 1rem; margin-bottom: 4px;">' + w.example.jp + '</div>' +
-              '<div style="font-size: 0.875rem; color: #9ca3af; margin-bottom: 4px;">' + w.example.romaji + '</div>' +
-              '<div style="font-size: 0.875rem; color: #10b981;">"' + w.example.eng + '"</div>' +
-            '</div>';
+          exampleHtml = '<div class="example-box"><div style="font-size: 1rem; margin-bottom: 4px;">' + w.example.jp + '</div><div style="font-size: 0.875rem; color: #9ca3af;">' + w.example.romaji + '</div><div style="font-size: 0.875rem; color: #10b981;">"' + w.example.eng + '"</div></div>';
         }
         
         var div = document.createElement('div');
         div.className = 'vocab-card';
         div.innerHTML = 
-          '<div style="display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: flex-start; align-items: flex-start; margin-bottom: 12px;">' +
-            '<div style="-webkit-flex: 1; flex: 1;">' +
+          '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">' +
+            '<div style="flex: 1;">' +
               '<div style="font-size: 2.25rem; font-weight: bold; margin-bottom: 4px;">' + w.jp + '</div>' +
               '<div style="font-size: 1.125rem; color: #9ca3af; margin-bottom: 8px;">' + w.romaji + '</div>' +
               '<div style="font-size: 1.25rem; color: #10b981; font-weight: 500; margin-bottom: 8px;">' + w.eng + '</div>' +
@@ -796,12 +1032,12 @@
               '<span style="font-size: 0.625rem; padding: 2px 8px; background: #374151; border-radius: 9999px; color: #9ca3af; text-transform: uppercase;">' + (w.type || 'word') + '</span>' +
             '</div>' +
           '</div>' +
-          '<div style="display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; margin-top: 12px;">' +
+          '<div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;">' +
             '<button onclick="speak(\'' + w.jp + '\'); event.stopPropagation();" class="speak-btn btn-touch">' +
               '<i class="fas fa-volume-up"></i> Listen' +
             '</button>' +
             '<a href="https://jisho.org/search/' + encodeURIComponent(w.jp) + '" target="_blank" class="jisho-link">' +
-              'View on Jisho <i class="fas fa-external-link-alt" style="font-size: 0.75rem;"></i>' +
+              'Jisho <i class="fas fa-external-link-alt" style="font-size: 0.75rem;"></i>' +
             '</a>' +
           '</div>' +
           exampleHtml;
@@ -824,14 +1060,9 @@
         var match = w.jp.toLowerCase().indexOf(term) !== -1 ||
                     (w.romaji || '').toLowerCase().indexOf(term) !== -1 ||
                     w.eng.toLowerCase().indexOf(term) !== -1 ||
-                    (w.extraMeanings && w.extraMeanings.some(function(m) { 
-                      return m.toLowerCase().indexOf(term) !== -1; 
-                    }));
+                    (w.extraMeanings && w.extraMeanings.some(function(m) { return m.toLowerCase().indexOf(term) !== -1; }));
         
-        var levelMatch = !lvl || w.level === lvl;
-        var typeMatch = !type || w.type === type;
-        
-        if (match && levelMatch && typeMatch) {
+        if (match && (!lvl || w.level === lvl) && (!type || w.type === type)) {
           filtered.push(w);
         }
       }
@@ -840,22 +1071,17 @@
 
     function showTab(n) {
       var tabs = document.querySelectorAll('.tab');
-      for (var i = 0; i < tabs.length; i++) {
-        tabs[i].style.display = 'none';
-      }
+      for (var i = 0; i < tabs.length; i++) tabs[i].style.display = 'none';
       var tab = document.getElementById('tab-' + n);
       if (tab) {
         tab.style.display = 'block';
-        // Special handling for Data tab
-        if (n === 4) {
-          updateDataStatus();
-        }
+        if (n === 4) updateDataStatus();
       }
       if (n === 0) filterVocab();
     }
 
     // ==========================================
-    // ADD / IMPORT FUNCTIONS
+    // ADD WORD FUNCTIONS
     // ==========================================
     
     function addCustomWord() {
@@ -867,13 +1093,13 @@
       var type = document.getElementById('addType').value;
       
       if (!jp || !eng) {
-        alert("Japanese and English meanings are required.");
+        alert("Japanese and English are required.");
         return;
       }
       
       var extraMeanings = extra ? extra.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) : [];
       
-      var newWord = {
+      customVocab.push({
         id: Date.now(),
         level: "Custom",
         type: type || "word",
@@ -881,18 +1107,12 @@
         romaji: romaji,
         eng: eng,
         extraMeanings: extraMeanings,
-        example: example ? {
-          jp: example,
-          romaji: "",
-          eng: ""
-        } : null
-      };
+        example: example ? { jp: example, romaji: "", eng: "" } : null
+      });
       
-      customVocab.push(newWord);
       saveData();
       filterVocab();
       
-      // Clear inputs
       document.getElementById('addJp').value = '';
       document.getElementById('addRomaji').value = '';
       document.getElementById('addEng').value = '';
@@ -900,7 +1120,7 @@
       document.getElementById('addExample').value = '';
       document.getElementById('addType').value = '';
       
-      alert("✅ Word added successfully!");
+      alert("✅ Word added!");
     }
 
     async function fetchFromJisho() {
@@ -909,19 +1129,19 @@
       var word = input ? input.value.trim() : '';
       
       if (!word) {
-        alert("Please enter a Japanese word to search.");
+        alert("Please enter a Japanese word.");
         return;
       }
       
       resultDiv.style.display = 'block';
-      resultDiv.innerHTML = '<p style="color: #9ca3af;">Loading from Jisho...</p>';
+      resultDiv.innerHTML = '<p style="color: #9ca3af;">Loading...</p>';
       
       try {
         var response = await fetch('https://jisho.org/api/v1/search/words?keyword=' + encodeURIComponent(word));
         var data = await response.json();
         
         if (!data.data || data.data.length === 0) {
-          resultDiv.innerHTML = '<p style="color: #ef4444;">No results found.</p>';
+          resultDiv.innerHTML = '<p style="color: #ef4444;">No results.</p>';
           return;
         }
         
@@ -930,33 +1150,21 @@
         var senses = entry.senses;
         
         var meanings = senses.map(function(s) { return s.english_definitions.join(', '); });
-        var primaryMeaning = meanings[0];
-        var extraMeanings = meanings.slice(1, 4);
         
-        // Auto-fill the form
         document.getElementById('addJp').value = japanese.word || japanese.reading;
         document.getElementById('addRomaji').value = japanese.reading;
-        document.getElementById('addEng').value = primaryMeaning;
-        document.getElementById('addExtra').value = extraMeanings.join(', ');
+        document.getElementById('addEng').value = meanings[0];
+        document.getElementById('addExtra').value = meanings.slice(1, 4).join(', ');
         
-        // Determine type
         var pos = senses[0].parts_of_speech;
         var type = 'word';
         if (pos.some(function(p) { return p.indexOf('Verb') !== -1; })) type = 'verb';
         else if (pos.some(function(p) { return p.indexOf('Adjective') !== -1; })) type = 'adjective';
         else if (pos.some(function(p) { return p.indexOf('Noun') !== -1; })) type = 'noun';
-        else if (pos.some(function(p) { return p.indexOf('Adverb') !== -1; })) type = 'adverb';
         
         document.getElementById('addType').value = type;
         
-        resultDiv.innerHTML = 
-          '<div style="color: #10b981; margin-bottom: 12px;"><i class="fas fa-check-circle"></i> Data fetched successfully!</div>' +
-          '<div style="background: #0f172a; padding: 16px; border-radius: 0.5rem;">' +
-            '<div style="font-size: 1.5rem; font-weight: bold; margin-bottom: 8px;">' + japanese.word + '</div>' +
-            '<div style="color: #9ca3af; margin-bottom: 12px;">' + primaryMeaning + '</div>' +
-            '<div style="font-size: 0.875rem; color: #64748b;">Type: ' + type + '</div>' +
-          '</div>' +
-          '<p style="color: #9ca3af; margin-top: 12px; font-size: 0.875rem;">Form has been auto-filled. Review and click "Add Word" to save.</p>';
+        resultDiv.innerHTML = '<div style="color: #10b981;"><i class="fas fa-check-circle"></i> Fetched: ' + japanese.word + '</div><div style="color: #9ca3af; font-size: 0.875rem; margin-top: 8px;">Review and click "Add Word"</div>';
         
       } catch (err) {
         resultDiv.innerHTML = '<p style="color: #ef4444;">Error: ' + err.message + '</p>';
@@ -978,18 +1186,17 @@
         var row = rows[i].trim();
         if (!row || row.indexOf('jp') === 0) continue;
         
-        var cols = row.split(',').map(function(c) { return c.trim().replace(/^"|"$/g, ''); });
-        
+        var cols = parseCSVLine(row);
         if (cols.length >= 3) {
           var extraMeanings = cols[4] ? cols[4].split(';').map(function(s) { return s.trim(); }) : [];
           
           customVocab.push({
             id: Date.now() + added,
             level: "Imported",
-            type: cols[3] || "word",
+            type: cols[3] || guessWordType(cols[0], cols[2]),
             jp: cols[0],
             romaji: cols[1] || '',
-            eng: cols[2],
+            eng: cols[2].split(';')[0].trim(),
             extraMeanings: extraMeanings,
             example: cols[5] ? { jp: cols[5], romaji: "", eng: "" } : null
           });
@@ -1000,7 +1207,7 @@
       if (added > 0) {
         saveData();
         if (textarea) textarea.value = '';
-        alert("✅ Imported " + added + " words successfully!");
+        alert("✅ Imported " + added + " words!");
         filterVocab();
       } else {
         alert("⚠️ No valid words found.");
@@ -1047,11 +1254,7 @@
       
       var exampleHtml = '';
       if (card.example && card.example.jp) {
-        exampleHtml = 
-          '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);">' +
-            '<div style="font-size: 1.125rem; margin-bottom: 4px;">' + card.example.jp + '</div>' +
-            '<div style="font-size: 0.875rem; color: #9ca3af;">' + card.example.eng + '</div>' +
-          '</div>';
+        exampleHtml = '<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);"><div style="font-size: 1.125rem;">' + card.example.jp + '</div><div style="font-size: 0.875rem; color: #9ca3af;">' + card.example.eng + '</div></div>';
       }
       document.getElementById('backExample').innerHTML = exampleHtml;
       
@@ -1064,14 +1267,13 @@
 
     function speakCurrent() {
       if (currentDeck.length === 0) return;
-      var card = currentDeck[currentCardIndex];
-      speak(card.jp);
+      speak(currentDeck[currentCardIndex].jp);
     }
 
     function nextCard(knewIt) {
       currentCardIndex++;
       if (currentCardIndex >= currentDeck.length) {
-        alert("🎉 Deck complete! Great job!");
+        alert("🎉 Deck complete!");
         showTab(0);
         return;
       }
@@ -1085,7 +1287,7 @@
     
     function startQuiz() {
       if (allVocab.length < 4) {
-        alert("Need at least 4 words for quiz!");
+        alert("Need at least 4 words!");
         return;
       }
       
@@ -1098,8 +1300,8 @@
       resultDiv.innerHTML = '';
       
       var correct = allVocab[Math.floor(Math.random() * allVocab.length)];
-      
       var options = [correct];
+      
       while (options.length < 4) {
         var random = allVocab[Math.floor(Math.random() * allVocab.length)];
         if (!options.some(function(o) { return o.eng === random.eng; })) {
@@ -1137,12 +1339,10 @@
     
     document.addEventListener('DOMContentLoaded', function() {
       initSpeech();
-      loadData(); // This loads from localStorage with migration support
+      loadData();
       showTab(0);
       filterVocab();
-      
-      console.log('Japanese Vocab Master Pro v' + APP_VERSION + ' loaded');
-      console.log('Custom words:', customVocab.length);
+      console.log('Japanese Vocab Master Pro v' + APP_VERSION);
     });
   </script>
 </body>
