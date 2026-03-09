@@ -217,6 +217,65 @@
       to { transform: rotate(360deg); }
     }
     
+    /* Alphabetical Index Styles */
+    .alpha-index {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: #111;
+      border-radius: 1rem;
+      border: 1px solid #374151;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .alpha-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      background: #1a1a1a;
+      color: #9ca3af;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .alpha-btn:hover {
+      background: #2d3748;
+      color: white;
+    }
+    
+    .alpha-btn.active {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: white;
+    }
+    
+    .alpha-btn.empty {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    
+    .alpha-clear {
+      margin-left: 8px;
+      padding: 0 12px;
+      background: #374151;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -336,6 +395,12 @@
           </select>
         </div>
       </div>
+      
+      <!-- Alphabetical Index -->
+      <div id="alphaIndex" class="alpha-index">
+        <!-- Generated dynamically -->
+      </div>
+      
       <div id="vocabList" class="ios-grid"></div>
     </div>
 
@@ -479,9 +544,9 @@
         <!-- MANUAL CSV -->
         <h2 style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem; margin-top: 2rem;">Manual CSV Import</h2>
         <p style="color: #9ca3af; margin-bottom: 1rem; font-size: 0.875rem;">
-          Paste CSV data directly. Format: japanese,romaji,english,type,extra meanings,example
+          Paste CSV data directly. Format: japanese,romaji,english,type,extra meanings,example,level
         </p>
-        <textarea id="importData" placeholder="こんにちは,konnichiwa,hello,expression,morning greeting,こんにちは、元気ですか？" style="width: 100%; height: 150px; background-color: #111; border: 1px solid #374151; border-radius: 1rem; padding: 20px; font-family: monospace; font-size: 0.875rem; color: white;"></textarea>
+        <textarea id="importData" placeholder="こんにちは,konnichiwa,hello,expression,morning greeting,こんにちは、元気ですか？,N5" style="width: 100%; height: 150px; background-color: #111; border: 1px solid #374151; border-radius: 1rem; padding: 20px; font-family: monospace; font-size: 0.875rem; color: white;"></textarea>
         <a href="#" onclick="importCSV(); return false;" ontouchstart="" class="btn-touch" style="margin-top: 16px; width: 100%; background-color: #e11d48; color: white; padding: 16px; border-radius: 1rem; font-weight: bold; text-decoration: none; display: block; text-align: center;">Import from Textarea</a>
         
         <a href="#" onclick="exportCustom(); return false;" ontouchstart="" class="btn-touch" style="margin-top: 12px; width: 100%; background-color: #374151; color: white; padding: 16px; border-radius: 1rem; text-decoration: none; display: block; text-align: center;">
@@ -496,11 +561,11 @@
     // CONFIGURATION
     // ==========================================
     
-    var APP_VERSION = '2.1.0';
+    var APP_VERSION = '2.2.0';
     var STORAGE_KEY = 'customVocab_v2';
     var BACKUP_KEY = 'customVocab_backup';
     
-    // JLPT CSV URLs from elzup/jlpt-word-list [^76^]
+    // JLPT CSV URLs from elzup/jlpt-word-list
     var JLPT_URLS = {
       N5: 'https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n5.csv',
       N4: 'https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n4.csv',
@@ -509,7 +574,7 @@
       N1: 'https://raw.githubusercontent.com/elzup/jlpt-word-list/master/src/n1.csv'
     };
     
-    // CORS Proxy services [^63^]
+    // CORS Proxy services
     var CORS_PROXIES = [
       'https://corsproxy.io/?',
       'https://api.allorigins.win/raw?url=',
@@ -563,6 +628,32 @@
     var currentCardIndex = 0;
     var synth = window.speechSynthesis;
     var japaneseVoice = null;
+    var currentAlphaFilter = null;
+    var currentFilteredVocab = [];
+
+    // ==========================================
+    // LEVEL NORMALIZATION
+    // ==========================================
+    
+    function normalizeLevel(rawLevel) {
+      if (!rawLevel) return 'Custom';
+      
+      // Convert to string and uppercase
+      var level = String(rawLevel).toUpperCase();
+      
+      // Extract N1-N5 from various formats: "jlpt_n4", "n4", "N4", "JLPT_N4"
+      var match = level.match(/N([1-5])/);
+      if (match) {
+        return 'N' + match[1];
+      }
+      
+      // Handle "Custom" or "Imported" variants
+      if (level.indexOf('CUSTOM') !== -1 || level.indexOf('IMPORTED') !== -1) {
+        return 'Custom';
+      }
+      
+      return 'Custom';
+    }
 
     // ==========================================
     // DATA LOADING & MIGRATION
@@ -590,8 +681,30 @@
         }
       }
       
+      // Migrate levels for existing data
+      migrateExistingData();
+      
       allVocab = defaultVocab.concat(customVocab);
       updateDataStatus();
+    }
+
+    function migrateExistingData() {
+      var needsSave = false;
+      
+      for (var i = 0; i < customVocab.length; i++) {
+        var word = customVocab[i];
+        var normalized = normalizeLevel(word.level);
+        
+        if (word.level !== normalized) {
+          word.level = normalized;
+          needsSave = true;
+        }
+      }
+      
+      if (needsSave) {
+        saveData();
+        console.log('Migrated existing data to normalized levels');
+      }
     }
 
     function saveData() {
@@ -644,6 +757,54 @@
           }
         }
       }
+    }
+
+    // ==========================================
+    // ALPHABETICAL INDEX
+    // ==========================================
+    
+    function generateAlphaIndex() {
+      var container = document.getElementById('alphaIndex');
+      if (!container) return;
+      
+      // Get unique first letters from current filtered vocabulary
+      var letters = {};
+      for (var i = 0; i < allVocab.length; i++) {
+        var romaji = allVocab[i].romaji || '';
+        if (romaji) {
+          var firstChar = romaji[0].toUpperCase();
+          if (/^[A-Z]$/.test(firstChar)) {
+            letters[firstChar] = true;
+          }
+        }
+      }
+      
+      // Sort letters
+      var sortedLetters = Object.keys(letters).sort();
+      
+      // Build HTML
+      var html = '';
+      for (var j = 0; j < sortedLetters.length; j++) {
+        var letter = sortedLetters[j];
+        var isActive = currentAlphaFilter === letter;
+        html += '<button class="alpha-btn ' + (isActive ? 'active' : '') + '" onclick="filterByLetter(\'' + letter + '\')" ontouchstart="">' + letter + '</button>';
+      }
+      
+      if (currentAlphaFilter) {
+        html += '<button class="alpha-clear" onclick="clearLetterFilter()" ontouchstart="">Clear</button>';
+      }
+      
+      container.innerHTML = html;
+    }
+
+    function filterByLetter(letter) {
+      currentAlphaFilter = letter;
+      filterVocab();
+    }
+
+    function clearLetterFilter() {
+      currentAlphaFilter = null;
+      filterVocab();
     }
 
     // ==========================================
@@ -712,7 +873,7 @@
             var word = parts[0];
             var reading = parts[1] || '';
             var meaning = parts[2] || '';
-            var wordLevel = parts[3] || level;
+            var wordLevel = normalizeLevel(parts[3] || level);
             
             if (word && meaning) {
               customVocab.push({
@@ -755,7 +916,7 @@
       var urlInput = document.getElementById('customUrl');
       var levelSelect = document.getElementById('urlLevel');
       var url = urlInput ? urlInput.value.trim() : '';
-      var level = levelSelect ? levelSelect.value : 'Custom';
+      var selectedLevel = levelSelect ? levelSelect.value : 'Custom';
       
       if (!url) {
         alert('Please enter a URL');
@@ -783,15 +944,19 @@
           
           var parts = parseCSVLine(line);
           if (parts.length >= 3) {
+            // Check if level is in CSV (7th column), otherwise use selected level
+            var csvLevel = parts.length >= 7 ? parts[6] : selectedLevel;
+            var normalizedLevel = normalizeLevel(csvLevel);
+            
             customVocab.push({
               id: Date.now() + imported,
-              level: level,
+              level: normalizedLevel,
               type: guessWordType(parts[0], parts[2]),
               jp: parts[0],
               romaji: parts[1] || '',
               eng: parts[2].split(';')[0].trim(),
-              extraMeanings: parts[2].split(';').slice(1).map(function(m) { return m.trim(); }).filter(function(m) { return m; }),
-              example: parts[3] || null
+              extraMeanings: parts[4] ? parts[4].split(';').map(function(m) { return m.trim(); }).filter(function(m) { return m; }) : [],
+              example: parts[5] ? { jp: parts[5], romaji: "", eng: "" } : null
             });
             imported++;
           }
@@ -885,6 +1050,11 @@
           var data = JSON.parse(e.target.result);
           if (!data.customVocab || !Array.isArray(data.customVocab)) {
             throw new Error('Invalid backup format');
+          }
+          
+          // Normalize levels in imported backup
+          for (var k = 0; k < data.customVocab.length; k++) {
+            data.customVocab[k].level = normalizeLevel(data.customVocab[k].level);
           }
           
           var existingIds = {};
@@ -998,6 +1168,12 @@
       if (!container) return;
       container.innerHTML = '';
       
+      // Store current filtered set for alpha index
+      currentFilteredVocab = filtered;
+      
+      // Update alpha index based on current results
+      generateAlphaIndex();
+      
       if (filtered.length === 0) {
         container.innerHTML = '<p style="color: #9ca3af; text-align: center; padding: 40px 0;">No words found. Try a different search or add new words!</p>';
         return;
@@ -1017,6 +1193,9 @@
           exampleHtml = '<div class="example-box"><div style="font-size: 1rem; margin-bottom: 4px;">' + w.example.jp + '</div><div style="font-size: 0.875rem; color: #9ca3af;">' + w.example.romaji + '</div><div style="font-size: 0.875rem; color: #10b981;">"' + w.example.eng + '"</div></div>';
         }
         
+        // Ensure level is normalized for display
+        var displayLevel = normalizeLevel(w.level);
+        
         var div = document.createElement('div');
         div.className = 'vocab-card';
         div.innerHTML = 
@@ -1028,7 +1207,7 @@
               extraTags +
             '</div>' +
             '<div style="text-align: right;">' +
-              '<span style="font-size: 0.75rem; padding: 4px 12px; background: #1f2937; border-radius: 9999px; display: block; margin-bottom: 8px;">' + w.level + '</span>' +
+              '<span style="font-size: 0.75rem; padding: 4px 12px; background: #1f2937; border-radius: 9999px; display: block; margin-bottom: 8px;">' + displayLevel + '</span>' +
               '<span style="font-size: 0.625rem; padding: 2px 8px; background: #374151; border-radius: 9999px; color: #9ca3af; text-transform: uppercase;">' + (w.type || 'word') + '</span>' +
             '</div>' +
           '</div>' +
@@ -1062,10 +1241,23 @@
                     w.eng.toLowerCase().indexOf(term) !== -1 ||
                     (w.extraMeanings && w.extraMeanings.some(function(m) { return m.toLowerCase().indexOf(term) !== -1; }));
         
-        if (match && (!lvl || w.level === lvl) && (!type || w.type === type)) {
+        // Normalize level for comparison
+        var normalizedLevel = normalizeLevel(w.level);
+        var levelMatch = !lvl || normalizedLevel === lvl;
+        
+        if (match && levelMatch && (!type || w.type === type)) {
           filtered.push(w);
         }
       }
+      
+      // Apply alphabetical filter if active
+      if (currentAlphaFilter) {
+        filtered = filtered.filter(function(w) {
+          var romaji = (w.romaji || '').toUpperCase();
+          return romaji && romaji[0] === currentAlphaFilter;
+        });
+      }
+      
       renderVocab(filtered);
     }
 
@@ -1077,7 +1269,10 @@
         tab.style.display = 'block';
         if (n === 4) updateDataStatus();
       }
-      if (n === 0) filterVocab();
+      if (n === 0) {
+        filterVocab();
+        generateAlphaIndex();
+      }
     }
 
     // ==========================================
@@ -1188,11 +1383,15 @@
         
         var cols = parseCSVLine(row);
         if (cols.length >= 3) {
-          var extraMeanings = cols[4] ? cols[4].split(';').map(function(s) { return s.trim(); }) : [];
+          var extraMeanings = cols[4] ? cols[4].split(';').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) : [];
+          
+          // Normalize the level from CSV (7th column) or default to "Imported"
+          var rawLevel = cols.length >= 7 ? cols[6] : 'Imported';
+          var normalizedLevel = normalizeLevel(rawLevel);
           
           customVocab.push({
             id: Date.now() + added,
-            level: "Imported",
+            level: normalizedLevel,
             type: cols[3] || guessWordType(cols[0], cols[2]),
             jp: cols[0],
             romaji: cols[1] || '',
@@ -1225,7 +1424,7 @@
       }
       
       var levelFilter = document.getElementById('levelFilter').value;
-      var pool = levelFilter ? allVocab.filter(function(w) { return w.level === levelFilter; }) : allVocab;
+      var pool = levelFilter ? allVocab.filter(function(w) { return normalizeLevel(w.level) === levelFilter; }) : allVocab;
       
       if (pool.length === 0) {
         alert("No words in selected level!");
