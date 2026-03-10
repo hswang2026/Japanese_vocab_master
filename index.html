@@ -561,7 +561,7 @@
     // CONFIGURATION
     // ==========================================
     
-    var APP_VERSION = '2.2.0';
+    var APP_VERSION = '2.2.1';
     var STORAGE_KEY = 'customVocab_v2';
     var BACKUP_KEY = 'customVocab_backup';
     
@@ -632,26 +632,42 @@
     var currentFilteredVocab = [];
 
     // ==========================================
-    // LEVEL NORMALIZATION
+    // LEVEL NORMALIZATION - FIXED VERSION
     // ==========================================
     
     function normalizeLevel(rawLevel) {
       if (!rawLevel) return 'Custom';
       
-      // Convert to string and uppercase
-      var level = String(rawLevel).toUpperCase();
+      // Convert to string and trim
+      var level = String(rawLevel).trim();
       
-      // Extract N1-N5 from various formats: "jlpt_n4", "n4", "N4", "JLPT_N4"
-      var match = level.match(/N([1-5])/);
+      // Debug logging (remove in production if desired)
+      // console.log('Normalizing level:', level);
+      
+      // Extract N1-N5 from various formats: "jlpt_n4", "n4", "N4", "JLPT_N4", "JLPT N4", "n4 ", " N4 "
+      // Case-insensitive match - handles both uppercase and lowercase n/N
+      var match = level.match(/[Nn]([1-5])/);
       if (match) {
-        return 'N' + match[1];
+        var normalized = 'N' + match[1];
+        // console.log('  -> Normalized to:', normalized);
+        return normalized;
       }
       
-      // Handle "Custom" or "Imported" variants
-      if (level.indexOf('CUSTOM') !== -1 || level.indexOf('IMPORTED') !== -1) {
+      // Handle "Custom" or "Imported" variants (case-insensitive)
+      var lowerLevel = level.toLowerCase();
+      if (lowerLevel.indexOf('custom') !== -1 || lowerLevel.indexOf('imported') !== -1) {
         return 'Custom';
       }
       
+      // If it contains jlpt, try to extract number
+      if (lowerLevel.indexOf('jlpt') !== -1) {
+        var jlptMatch = lowerLevel.match(/(\d)/);
+        if (jlptMatch && jlptMatch[1] >= 1 && jlptMatch[1] <= 5) {
+          return 'N' + jlptMatch[1];
+        }
+      }
+      
+      // console.log('  -> Fallback to Custom');
       return 'Custom';
     }
 
@@ -854,6 +870,9 @@
         var text = await fetchWithProxy(url);
         var lines = text.split('\n').filter(function(l) { return l.trim(); });
         
+        // Debug: log first few lines
+        console.log('First 5 lines of CSV:', lines.slice(0, 5));
+        
         // Skip header if present
         var startIndex = 0;
         if (lines.length > 0 && (lines[0].indexOf('word') !== -1 || lines[0].indexOf('level') !== -1)) {
@@ -862,6 +881,7 @@
         
         var imported = 0;
         var errors = [];
+        var levelCounts = {N1: 0, N2: 0, N3: 0, N4: 0, N5: 0, Custom: 0}; // Track counts
         
         for (var i = startIndex; i < lines.length; i++) {
           var line = lines[i].trim();
@@ -869,11 +889,29 @@
           
           // Parse CSV: word,reading,meaning,level
           var parts = parseCSVLine(line);
+          
+          // Debug: log first few parsed lines
+          if (i < startIndex + 3) {
+            console.log('Parsed line', i, ':', parts);
+          }
+          
           if (parts.length >= 3) {
             var word = parts[0];
             var reading = parts[1] || '';
             var meaning = parts[2] || '';
-            var wordLevel = normalizeLevel(parts[3] || level);
+            
+            // FIXED: Check if level exists in CSV (column 3), normalize it
+            var wordLevel;
+            if (parts.length >= 4 && parts[3]) {
+              // Level exists in CSV - normalize it
+              wordLevel = normalizeLevel(parts[3]);
+            } else {
+              // No level in CSV - use the level from the button that was clicked
+              wordLevel = level; // This is already "N5", "N4", etc.
+            }
+            
+            // Track counts for debugging
+            levelCounts[wordLevel] = (levelCounts[wordLevel] || 0) + 1;
             
             if (word && meaning) {
               customVocab.push({
@@ -891,13 +929,17 @@
           }
         }
         
+        console.log('Level distribution:', levelCounts); // Debug log
+        
         saveData();
         filterVocab();
         
         statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> Import complete!';
         resultEl.innerHTML = 
           '<div style="color: #10b981; font-weight: 600;">Successfully imported ' + imported + ' words from ' + level + '</div>' +
-          '<div style="color: #9ca3af; font-size: 0.875rem; margin-top: 0.5rem;">Total custom words: ' + customVocab.length + '</div>';
+          '<div style="color: #9ca3af; font-size: 0.875rem; margin-top: 0.5rem;">' +
+          'N5: ' + levelCounts.N5 + ', N4: ' + levelCounts.N4 + ', N3: ' + levelCounts.N3 + ', N2: ' + levelCounts.N2 + ', N1: ' + levelCounts.N1 + ', Custom: ' + levelCounts.Custom +
+          '</div>';
         resultEl.style.display = 'block';
         
         // Auto-hide after 5 seconds
@@ -1233,6 +1275,9 @@
       var lvl = levelSelect ? levelSelect.value : '';
       var type = typeSelect ? typeSelect.value : '';
       
+      // Debug logging
+      // console.log('Filtering with level:', lvl);
+      
       var filtered = [];
       for (var i = 0; i < allVocab.length; i++) {
         var w = allVocab[i];
@@ -1241,14 +1286,21 @@
                     w.eng.toLowerCase().indexOf(term) !== -1 ||
                     (w.extraMeanings && w.extraMeanings.some(function(m) { return m.toLowerCase().indexOf(term) !== -1; }));
         
-        // Normalize level for comparison
-        var normalizedLevel = normalizeLevel(w.level);
-        var levelMatch = !lvl || normalizedLevel === lvl;
+        // FIXED: Normalize level for comparison - ensure both sides are normalized
+        var normalizedWordLevel = normalizeLevel(w.level);
+        var levelMatch = !lvl || normalizedWordLevel === lvl;
+        
+        // Debug: log first few items when filtering by level
+        // if (i < 5 && lvl) {
+        //   console.log('Word:', w.jp, 'Raw level:', w.level, 'Normalized:', normalizedWordLevel, 'Matches filter:', levelMatch);
+        // }
         
         if (match && levelMatch && (!type || w.type === type)) {
           filtered.push(w);
         }
       }
+      
+      // console.log('Filtered count:', filtered.length);
       
       // Apply alphabetical filter if active
       if (currentAlphaFilter) {
