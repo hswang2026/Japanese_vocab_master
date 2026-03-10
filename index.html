@@ -392,6 +392,11 @@
             <option value="verb">Verbs</option>
             <option value="adjective">Adjectives</option>
             <option value="noun">Nouns</option>
+            <option value="adverb">Adverbs</option>
+            <option value="expression">Expressions</option>
+            <option value="particle">Particles</option>
+            <option value="counter">Counters</option>
+            <option value="pronoun">Pronouns</option>
           </select>
         </div>
       </div>
@@ -519,11 +524,17 @@
           <select id="addType" style="background-color: #111; border: 1px solid #374151; border-radius: 1rem; padding: 16px 24px; color: white;">
             <option value="">Select word type...</option>
             <option value="verb">Verb</option>
-            <option value="adjective">Adjective</option>
+            <option value="adjective-i">i-Adjective</option>
+            <option value="adjective-na">na-Adjective</option>
+            <option value="adjective">Adjective (general)</option>
             <option value="noun">Noun</option>
             <option value="adverb">Adverb</option>
             <option value="particle">Particle</option>
             <option value="expression">Expression</option>
+            <option value="counter">Counter</option>
+            <option value="pronoun">Pronoun</option>
+            <option value="conjunction">Conjunction</option>
+            <option value="auxiliary">Auxiliary Verb</option>
           </select>
         </div>
         <a href="#" onclick="addCustomWord(); return false;" ontouchstart="" class="btn-touch" style="margin-top: 24px; width: 100%; background-color: #059669; color: white; padding: 20px; border-radius: 1rem; font-weight: bold; font-size: 1.25rem; text-decoration: none; display: block; text-align: center;">Add Word</a>
@@ -561,7 +572,7 @@
     // CONFIGURATION
     // ==========================================
     
-    var APP_VERSION = '2.2.1';
+    var APP_VERSION = '2.2.2';
     var STORAGE_KEY = 'customVocab_v2';
     var BACKUP_KEY = 'customVocab_backup';
     
@@ -580,6 +591,40 @@
       'https://api.allorigins.win/raw?url=',
       'https://api.codetabs.com/v1/proxy?quest='
     ];
+
+    // Type detection patterns
+    var TYPE_PATTERNS = {
+      verb: {
+        prefixes: ['to '],
+        suffixes: ['する', 'る', 'う', 'く', 'ぐ', 'す', 'つ', 'ぬ', 'ぶ', 'む'],
+        keywords: ['verb', 'transitive', 'intransitive', 'ichidan', 'godan', 'suru verb', 'ru verb', 'u verb']
+      },
+      adjective: {
+        suffixes: ['い', 'しい', 'しい', 'な'],
+        keywords: ['adjective', 'i-adjective', 'na-adjective', 'ii-adjective']
+      },
+      noun: {
+        keywords: ['noun', 'no-adjective'],
+        indicators: ['thing', 'person', 'place', 'time', 'day', 'month', 'year', 'money', 'book', 'car', 'house', 'food', 'water']
+      },
+      adverb: {
+        suffixes: ['く', 'に'],
+        keywords: ['adverb']
+      },
+      expression: {
+        keywords: ['expression', 'phrase', 'greeting', 'interjection', 'colloquialism']
+      },
+      particle: {
+        keywords: ['particle', 'postposition']
+      },
+      counter: {
+        suffixes: ['つ', '個', '本', '枚', '台', '匹', '人', '冊', '回', '度', '階', '年', '月', '日', '時', '分', '秒'],
+        keywords: ['counter', 'classifier']
+      },
+      pronoun: {
+        keywords: ['pronoun', 'I', 'you', 'he', 'she', 'it', 'we', 'they', 'this', 'that', 'here', 'there']
+      }
+    };
     
     // ==========================================
     // STORAGE UTILITIES
@@ -641,16 +686,11 @@
       // Convert to string and trim
       var level = String(rawLevel).trim();
       
-      // Debug logging (remove in production if desired)
-      // console.log('Normalizing level:', level);
-      
       // Extract N1-N5 from various formats: "jlpt_n4", "n4", "N4", "JLPT_N4", "JLPT N4", "n4 ", " N4 "
       // Case-insensitive match - handles both uppercase and lowercase n/N
       var match = level.match(/[Nn]([1-5])/);
       if (match) {
-        var normalized = 'N' + match[1];
-        // console.log('  -> Normalized to:', normalized);
-        return normalized;
+        return 'N' + match[1];
       }
       
       // Handle "Custom" or "Imported" variants (case-insensitive)
@@ -667,8 +707,179 @@
         }
       }
       
-      // console.log('  -> Fallback to Custom');
       return 'Custom';
+    }
+
+    // ==========================================
+    // IMPROVED TYPE DETECTION
+    // ==========================================
+    
+    function guessWordType(word, meaning) {
+      if (!meaning || !word) return 'word';
+      
+      var lowerMeaning = meaning.toLowerCase();
+      var lowerWord = word.toLowerCase();
+      
+      // Check for verb patterns first (highest priority)
+      // Pattern 1: Starts with "to " (English infinitive)
+      if (lowerMeaning.indexOf('to ') === 0) {
+        // But check if it's not a noun phrase like "toe" or "toy"
+        var nextChar = lowerMeaning.charAt(3);
+        if (nextChar !== ' ' && nextChar !== undefined) {
+          return 'verb';
+        }
+      }
+      
+      // Pattern 2: Contains verb keywords
+      for (var i = 0; i < TYPE_PATTERNS.verb.keywords.length; i++) {
+        if (lowerMeaning.indexOf(TYPE_PATTERNS.verb.keywords[i]) !== -1) {
+          return 'verb';
+        }
+      }
+      
+      // Pattern 3: Japanese verb endings (る, う, く, etc.)
+      // Check last 1-2 characters
+      var lastChar = word.charAt(word.length - 1);
+      var lastTwoChars = word.slice(-2);
+      
+      // Godan verb endings
+      var godanEndings = ['う', 'く', 'ぐ', 'す', 'つ', 'ぬ', 'ぶ', 'む', 'る'];
+      // Ichidan verb endings (る verbs with i/e before)
+      var ichidanPattern = /[いきしちにひみりえけせてねへめれ]る$/;
+      
+      if (godanEndings.indexOf(lastChar) !== -1 || ichidanPattern.test(word)) {
+        // Additional check: if meaning suggests it's not a verb
+        var nonVerbIndicators = ['noun', 'adjective', 'adverb', 'particle'];
+        var isNonVerb = false;
+        for (var j = 0; j < nonVerbIndicators.length; j++) {
+          if (lowerMeaning.indexOf(nonVerbIndicators[j]) !== -1) {
+            isNonVerb = true;
+            break;
+          }
+        }
+        if (!isNonVerb) {
+          return 'verb';
+        }
+      }
+      
+      // Check for adjective patterns
+      // i-adjectives typically end in い (but not all い-ending words)
+      if (word.charAt(word.length - 1) === 'い') {
+        // Check if meaning suggests adjective
+        var adjIndicators = ['big', 'small', 'good', 'bad', 'new', 'old', 'hot', 'cold', 'high', 'low', 'fast', 'slow', 'red', 'blue', 'white', 'black', 'happy', 'sad', 'easy', 'difficult', 'expensive', 'cheap'];
+        for (var k = 0; k < adjIndicators.length; k++) {
+          if (lowerMeaning.indexOf(adjIndicators[k]) !== -1) {
+            return 'adjective';
+          }
+        }
+        // Check for explicit adjective keywords
+        for (var l = 0; l < TYPE_PATTERNS.adjective.keywords.length; l++) {
+          if (lowerMeaning.indexOf(TYPE_PATTERNS.adjective.keywords[l]) !== -1) {
+            return 'adjective';
+          }
+        }
+      }
+      
+      // na-adjectives (often end in な when in attributive form, but in dictionary form might not)
+      // Check meaning for na-adjective indicators
+      if (lowerMeaning.indexOf('na-adjective') !== -1 || 
+          lowerMeaning.indexOf('na adjective') !== -1 ||
+          lowerMeaning.indexOf('adjectival noun') !== -1) {
+        return 'adjective';
+      }
+      
+      // Check for noun patterns
+      // Pattern 1: Explicit noun keyword
+      if (lowerMeaning.indexOf('noun') !== -1) {
+        return 'noun';
+      }
+      
+      // Pattern 2: Common noun indicators in meaning
+      var nounIndicators = ['thing', 'person', 'people', 'place', 'time', 'day', 'month', 'year', 'money', 'book', 'car', 'house', 'food', 'water', 'student', 'teacher', 'company', 'school', 'country', 'city', 'station', 'room', 'number', 'part', 'way', 'man', 'woman', 'child', 'company', 'work', 'job', 'language', 'word', 'sentence', 'question', 'answer', 'problem', 'example', 'part', 'side', 'top', 'bottom', 'front', 'back', 'inside', 'outside', 'left', 'right', 'name', 'address', 'phone', 'number', 'price', 'cost', 'value'];
+      for (var m = 0; m < nounIndicators.length; m++) {
+        if (lowerMeaning.indexOf(nounIndicators[m]) !== -1) {
+          return 'noun';
+        }
+      }
+      
+      // Pattern 3: No verb prefix and no obvious verb ending
+      // Check if it's a single word meaning without "to "
+      if (lowerMeaning.indexOf('to ') !== 0 && lowerMeaning.split(' ').length <= 3) {
+        // Likely a noun if it's a short phrase without verb marker
+        // But check for adjective keywords first
+        var adjWords = ['big', 'small', 'good', 'bad', 'new', 'old', 'hot', 'cold', 'high', 'low', 'fast', 'slow', 'long', 'short', 'many', 'few', 'much', 'little', 'young', 'early', 'late', 'easy', 'hard', 'difficult', 'simple', 'complex', 'beautiful', 'ugly', 'clean', 'dirty', 'strong', 'weak', 'healthy', 'sick', 'busy', 'free', 'important', 'necessary', 'possible', 'impossible', 'right', 'wrong', 'same', 'different', 'true', 'false'];
+        var isAdj = false;
+        for (var n = 0; n < adjWords.length; n++) {
+          if (lowerMeaning === adjWords[n] || lowerMeaning.indexOf(adjWords[n] + ' ') === 0 || lowerMeaning.indexOf(' ' + adjWords[n]) !== -1) {
+            isAdj = true;
+            break;
+          }
+        }
+        if (!isAdj) {
+          return 'noun';
+        }
+      }
+      
+      // Check for adverb patterns
+      for (var p = 0; p < TYPE_PATTERNS.adverb.keywords.length; p++) {
+        if (lowerMeaning.indexOf(TYPE_PATTERNS.adverb.keywords[p]) !== -1) {
+          return 'adverb';
+        }
+      }
+      // Adverbs often end in く (from i-adjectives) or に (from na-adjectives)
+      if (word.charAt(word.length - 1) === 'く' || word.slice(-2) === 'に') {
+        if (lowerMeaning.indexOf('ly ') !== -1 || lowerMeaning.indexOf(' very') !== -1) {
+          return 'adverb';
+        }
+      }
+      
+      // Check for expression patterns
+      for (var q = 0; q < TYPE_PATTERNS.expression.keywords.length; q++) {
+        if (lowerMeaning.indexOf(TYPE_PATTERNS.expression.keywords[q]) !== -1) {
+          return 'expression';
+        }
+      }
+      // Multi-word phrases without clear grammar are often expressions
+      if (word.length > 3 && lowerMeaning.split(' ').length >= 2 && !lowerMeaning.match(/^(to|a|an|the)\s/i)) {
+        return 'expression';
+      }
+      
+      // Check for particle patterns
+      for (var r = 0; r < TYPE_PATTERNS.particle.keywords.length; r++) {
+        if (lowerMeaning.indexOf(TYPE_PATTERNS.particle.keywords[r]) !== -1) {
+          return 'particle';
+        }
+      }
+      // Single kana characters are often particles
+      if (word.length === 1 && word.match(/[はがをにでとやへよりからまでのも]/)) {
+        return 'particle';
+      }
+      
+      // Check for counter patterns
+      for (var s = 0; s < TYPE_PATTERNS.counter.keywords.length; s++) {
+        if (lowerMeaning.indexOf(TYPE_PATTERNS.counter.keywords[s]) !== -1) {
+          return 'counter';
+        }
+      }
+      
+      // Check for pronoun patterns
+      for (var t = 0; t < TYPE_PATTERNS.pronoun.keywords.length; t++) {
+        if (lowerMeaning.indexOf(TYPE_PATTERNS.pronoun.keywords[t]) !== -1) {
+          return 'pronoun';
+        }
+      }
+      // Common Japanese pronouns
+      var pronounWords = ['私', '僕', '俺', 'あなた', '君', 'お前', '彼', '彼女', 'これ', 'それ', 'あれ', 'ここ', 'そこ', 'あそこ', 'こちら', 'そちら', 'あちら', 'みんな', '皆', '自分', '誰', '何', 'いつ', 'どこ'];
+      if (pronounWords.indexOf(word) !== -1) {
+        return 'pronoun';
+      }
+      
+      // Default to noun for short words, word for longer phrases
+      if (word.length <= 4 && lowerMeaning.split(' ').length <= 3) {
+        return 'noun';
+      }
+      
+      return 'word';
     }
 
     // ==========================================
@@ -715,11 +926,20 @@
           word.level = normalized;
           needsSave = true;
         }
+        
+        // Also improve type detection for existing words labeled as "word"
+        if (word.type === 'word' || !word.type) {
+          var betterType = guessWordType(word.jp, word.eng);
+          if (betterType !== 'word') {
+            word.type = betterType;
+            needsSave = true;
+          }
+        }
       }
       
       if (needsSave) {
         saveData();
-        console.log('Migrated existing data to normalized levels');
+        console.log('Migrated existing data with improved type detection');
       }
     }
 
@@ -776,17 +996,20 @@
     }
 
     // ==========================================
-    // ALPHABETICAL INDEX
+    // ALPHABETICAL INDEX - FIXED
     // ==========================================
     
     function generateAlphaIndex() {
       var container = document.getElementById('alphaIndex');
       if (!container) return;
       
-      // Get unique first letters from current filtered vocabulary
+      // FIXED: Get letters from currently filtered vocabulary, not all vocabulary
+      // This ensures the index reflects available letters after level/type filters
+      var vocabToCheck = currentFilteredVocab && currentFilteredVocab.length > 0 ? currentFilteredVocab : allVocab;
+      
       var letters = {};
-      for (var i = 0; i < allVocab.length; i++) {
-        var romaji = allVocab[i].romaji || '';
+      for (var i = 0; i < vocabToCheck.length; i++) {
+        var romaji = vocabToCheck[i].romaji || '';
         if (romaji) {
           var firstChar = romaji[0].toUpperCase();
           if (/^[A-Z]$/.test(firstChar)) {
@@ -795,19 +1018,28 @@
         }
       }
       
-      // Sort letters
+      // Sort letters alphabetically
       var sortedLetters = Object.keys(letters).sort();
       
-      // Build HTML
+      // Build HTML - show all letters A-Z, but highlight available ones
       var html = '';
-      for (var j = 0; j < sortedLetters.length; j++) {
-        var letter = sortedLetters[j];
+      var allLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+      
+      for (var j = 0; j < allLetters.length; j++) {
+        var letter = allLetters[j];
+        var hasWords = letters[letter];
         var isActive = currentAlphaFilter === letter;
-        html += '<button class="alpha-btn ' + (isActive ? 'active' : '') + '" onclick="filterByLetter(\'' + letter + '\')" ontouchstart="">' + letter + '</button>';
+        
+        if (hasWords) {
+          html += '<button class="alpha-btn ' + (isActive ? 'active' : '') + '" onclick="filterByLetter(\'' + letter + '\')" ontouchstart="">' + letter + '</button>';
+        } else {
+          // Show disabled button for letters with no words
+          html += '<button class="alpha-btn empty" disabled>' + letter + '</button>';
+        }
       }
       
       if (currentAlphaFilter) {
-        html += '<button class="alpha-clear" onclick="clearLetterFilter()" ontouchstart="">Clear</button>';
+        html += '<button class="alpha-clear" onclick="clearLetterFilter()" ontouchstart="">Clear (' + currentAlphaFilter + ')</button>';
       }
       
       container.innerHTML = html;
@@ -870,9 +1102,6 @@
         var text = await fetchWithProxy(url);
         var lines = text.split('\n').filter(function(l) { return l.trim(); });
         
-        // Debug: log first few lines
-        console.log('First 5 lines of CSV:', lines.slice(0, 5));
-        
         // Skip header if present
         var startIndex = 0;
         if (lines.length > 0 && (lines[0].indexOf('word') !== -1 || lines[0].indexOf('level') !== -1)) {
@@ -881,7 +1110,8 @@
         
         var imported = 0;
         var errors = [];
-        var levelCounts = {N1: 0, N2: 0, N3: 0, N4: 0, N5: 0, Custom: 0}; // Track counts
+        var levelCounts = {N1: 0, N2: 0, N3: 0, N4: 0, N5: 0, Custom: 0};
+        var typeCounts = {};
         
         for (var i = startIndex; i < lines.length; i++) {
           var line = lines[i].trim();
@@ -890,34 +1120,30 @@
           // Parse CSV: word,reading,meaning,level
           var parts = parseCSVLine(line);
           
-          // Debug: log first few parsed lines
-          if (i < startIndex + 3) {
-            console.log('Parsed line', i, ':', parts);
-          }
-          
           if (parts.length >= 3) {
             var word = parts[0];
             var reading = parts[1] || '';
             var meaning = parts[2] || '';
             
-            // FIXED: Check if level exists in CSV (column 3), normalize it
+            // Determine level
             var wordLevel;
             if (parts.length >= 4 && parts[3]) {
-              // Level exists in CSV - normalize it
               wordLevel = normalizeLevel(parts[3]);
             } else {
-              // No level in CSV - use the level from the button that was clicked
-              wordLevel = level; // This is already "N5", "N4", etc.
+              wordLevel = level; // Use button level as fallback
             }
             
-            // Track counts for debugging
+            // Determine type with improved detection
+            var wordType = guessWordType(word, meaning);
+            
             levelCounts[wordLevel] = (levelCounts[wordLevel] || 0) + 1;
+            typeCounts[wordType] = (typeCounts[wordType] || 0) + 1;
             
             if (word && meaning) {
               customVocab.push({
                 id: Date.now() + imported,
                 level: wordLevel,
-                type: guessWordType(word, meaning),
+                type: wordType,
                 jp: word,
                 romaji: reading,
                 eng: meaning.split(';')[0].trim(),
@@ -929,7 +1155,8 @@
           }
         }
         
-        console.log('Level distribution:', levelCounts); // Debug log
+        console.log('Level distribution:', levelCounts);
+        console.log('Type distribution:', typeCounts);
         
         saveData();
         filterVocab();
@@ -937,12 +1164,14 @@
         statusEl.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> Import complete!';
         resultEl.innerHTML = 
           '<div style="color: #10b981; font-weight: 600;">Successfully imported ' + imported + ' words from ' + level + '</div>' +
-          '<div style="color: #9ca3af; font-size: 0.875rem; margin-top: 0.5rem;">' +
-          'N5: ' + levelCounts.N5 + ', N4: ' + levelCounts.N4 + ', N3: ' + levelCounts.N3 + ', N2: ' + levelCounts.N2 + ', N1: ' + levelCounts.N1 + ', Custom: ' + levelCounts.Custom +
+          '<div style="color: #9ca3af; font-size: 0.75rem; margin-top: 0.5rem;">' +
+          'Levels: N5:' + levelCounts.N5 + ' N4:' + levelCounts.N4 + ' N3:' + levelCounts.N3 + ' N2:' + levelCounts.N2 + ' N1:' + levelCounts.N1 + ' Custom:' + levelCounts.Custom +
+          '</div>' +
+          '<div style="color: #9ca3af; font-size: 0.75rem; margin-top: 0.25rem;">' +
+          'Types: noun:' + (typeCounts.noun || 0) + ' verb:' + (typeCounts.verb || 0) + ' adj:' + (typeCounts.adjective || 0) + ' expr:' + (typeCounts.expression || 0) + ' other:' + (typeCounts.word || 0) +
           '</div>';
         resultEl.style.display = 'block';
         
-        // Auto-hide after 5 seconds
         setTimeout(function() {
           progressDiv.style.display = 'none';
         }, 5000);
@@ -976,7 +1205,6 @@
       try {
         var text = await fetchWithProxy(url);
         
-        // Try to parse as CSV
         var lines = text.split('\n').filter(function(l) { return l.trim(); });
         var imported = 0;
         
@@ -986,14 +1214,14 @@
           
           var parts = parseCSVLine(line);
           if (parts.length >= 3) {
-            // Check if level is in CSV (7th column), otherwise use selected level
             var csvLevel = parts.length >= 7 ? parts[6] : selectedLevel;
             var normalizedLevel = normalizeLevel(csvLevel);
+            var wordType = guessWordType(parts[0], parts[2]);
             
             customVocab.push({
               id: Date.now() + imported,
               level: normalizedLevel,
-              type: guessWordType(parts[0], parts[2]),
+              type: wordType,
               jp: parts[0],
               romaji: parts[1] || '',
               eng: parts[2].split(';')[0].trim(),
@@ -1043,17 +1271,6 @@
       return result;
     }
 
-    function guessWordType(word, meaning) {
-      if (!meaning) return 'word';
-      meaning = meaning.toLowerCase();
-      if (meaning.indexOf('to ') === 0) return 'verb';
-      if (meaning.indexOf('verb') !== -1) return 'verb';
-      if (meaning.indexOf('adjective') !== -1) return 'adjective';
-      if (meaning.indexOf('noun') !== -1) return 'noun';
-      if (meaning.indexOf('adverb') !== -1) return 'adverb';
-      return 'word';
-    }
-
     // ==========================================
     // BACKUP & EXPORT
     // ==========================================
@@ -1094,9 +1311,15 @@
             throw new Error('Invalid backup format');
           }
           
-          // Normalize levels in imported backup
+          // Normalize levels and improve types in imported backup
           for (var k = 0; k < data.customVocab.length; k++) {
-            data.customVocab[k].level = normalizeLevel(data.customVocab[k].level);
+            var word = data.customVocab[k];
+            word.level = normalizeLevel(word.level);
+            
+            // Improve type if it's "word"
+            if (word.type === 'word' || !word.type) {
+              word.type = guessWordType(word.jp, word.eng);
+            }
           }
           
           var existingIds = {};
@@ -1235,8 +1458,8 @@
           exampleHtml = '<div class="example-box"><div style="font-size: 1rem; margin-bottom: 4px;">' + w.example.jp + '</div><div style="font-size: 0.875rem; color: #9ca3af;">' + w.example.romaji + '</div><div style="font-size: 0.875rem; color: #10b981;">"' + w.example.eng + '"</div></div>';
         }
         
-        // Ensure level is normalized for display
         var displayLevel = normalizeLevel(w.level);
+        var displayType = w.type || 'word';
         
         var div = document.createElement('div');
         div.className = 'vocab-card';
@@ -1250,7 +1473,7 @@
             '</div>' +
             '<div style="text-align: right;">' +
               '<span style="font-size: 0.75rem; padding: 4px 12px; background: #1f2937; border-radius: 9999px; display: block; margin-bottom: 8px;">' + displayLevel + '</span>' +
-              '<span style="font-size: 0.625rem; padding: 2px 8px; background: #374151; border-radius: 9999px; color: #9ca3af; text-transform: uppercase;">' + (w.type || 'word') + '</span>' +
+              '<span style="font-size: 0.625rem; padding: 2px 8px; background: #374151; border-radius: 9999px; color: #9ca3af; text-transform: uppercase;">' + displayType + '</span>' +
             '</div>' +
           '</div>' +
           '<div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;">' +
@@ -1275,9 +1498,6 @@
       var lvl = levelSelect ? levelSelect.value : '';
       var type = typeSelect ? typeSelect.value : '';
       
-      // Debug logging
-      // console.log('Filtering with level:', lvl);
-      
       var filtered = [];
       for (var i = 0; i < allVocab.length; i++) {
         var w = allVocab[i];
@@ -1286,21 +1506,24 @@
                     w.eng.toLowerCase().indexOf(term) !== -1 ||
                     (w.extraMeanings && w.extraMeanings.some(function(m) { return m.toLowerCase().indexOf(term) !== -1; }));
         
-        // FIXED: Normalize level for comparison - ensure both sides are normalized
         var normalizedWordLevel = normalizeLevel(w.level);
         var levelMatch = !lvl || normalizedWordLevel === lvl;
         
-        // Debug: log first few items when filtering by level
-        // if (i < 5 && lvl) {
-        //   console.log('Word:', w.jp, 'Raw level:', w.level, 'Normalized:', normalizedWordLevel, 'Matches filter:', levelMatch);
-        // }
+        // FIXED: Better type matching - handle "adjective" matching "adjective-i" and "adjective-na"
+        var typeMatch = !type;
+        if (type && w.type) {
+          if (type === 'adjective') {
+            // Match both general "adjective" and specific "adjective-i", "adjective-na"
+            typeMatch = w.type.indexOf('adjective') !== -1;
+          } else {
+            typeMatch = w.type === type;
+          }
+        }
         
-        if (match && levelMatch && (!type || w.type === type)) {
+        if (match && levelMatch && typeMatch) {
           filtered.push(w);
         }
       }
-      
-      // console.log('Filtered count:', filtered.length);
       
       // Apply alphabetical filter if active
       if (currentAlphaFilter) {
@@ -1323,7 +1546,6 @@
       }
       if (n === 0) {
         filterVocab();
-        generateAlphaIndex();
       }
     }
 
@@ -1349,7 +1571,7 @@
       customVocab.push({
         id: Date.now(),
         level: "Custom",
-        type: type || "word",
+        type: type || guessWordType(jp, eng),
         jp: jp,
         romaji: romaji,
         eng: eng,
@@ -1405,9 +1627,18 @@
         
         var pos = senses[0].parts_of_speech;
         var type = 'word';
-        if (pos.some(function(p) { return p.indexOf('Verb') !== -1; })) type = 'verb';
-        else if (pos.some(function(p) { return p.indexOf('Adjective') !== -1; })) type = 'adjective';
-        else if (pos.some(function(p) { return p.indexOf('Noun') !== -1; })) type = 'noun';
+        
+        // Better Jisho type detection
+        var posString = pos.join(' ').toLowerCase();
+        if (posString.indexOf('verb') !== -1) type = 'verb';
+        else if (posString.indexOf('i-adjective') !== -1 || posString.indexOf('adjective (i') !== -1) type = 'adjective-i';
+        else if (posString.indexOf('na-adjective') !== -1 || posString.indexOf('adjective (na') !== -1) type = 'adjective-na';
+        else if (posString.indexOf('adjective') !== -1) type = 'adjective';
+        else if (posString.indexOf('noun') !== -1) type = 'noun';
+        else if (posString.indexOf('adverb') !== -1) type = 'adverb';
+        else if (posString.indexOf('particle') !== -1) type = 'particle';
+        else if (posString.indexOf('pronoun') !== -1) type = 'pronoun';
+        else if (posString.indexOf('expression') !== -1 || posString.indexOf('phrase') !== -1) type = 'expression';
         
         document.getElementById('addType').value = type;
         
@@ -1437,14 +1668,16 @@
         if (cols.length >= 3) {
           var extraMeanings = cols[4] ? cols[4].split(';').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) : [];
           
-          // Normalize the level from CSV (7th column) or default to "Imported"
           var rawLevel = cols.length >= 7 ? cols[6] : 'Imported';
           var normalizedLevel = normalizeLevel(rawLevel);
+          
+          // Use provided type or guess it
+          var wordType = cols[3] || guessWordType(cols[0], cols[2]);
           
           customVocab.push({
             id: Date.now() + added,
             level: normalizedLevel,
-            type: cols[3] || guessWordType(cols[0], cols[2]),
+            type: wordType,
             jp: cols[0],
             romaji: cols[1] || '',
             eng: cols[2].split(';')[0].trim(),
